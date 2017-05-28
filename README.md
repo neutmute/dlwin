@@ -9,7 +9,7 @@ We also found enough misguiding/deprecated information out there to make it wort
 
 If you **must** run your DL setup on Windows 10, then the information contained here may be useful to you.
 
-For the old installation instructions from January 2017, check-out [this readme](README_Jan2017.md). 
+For the old installation instructions from January 2017, check-out [this readme](README_Jan2017.md).
 
 # Dependencies
 Here's a summary list of the tools and libraries we use for deep learning on Windows 10 (Version 1607 OS Build 14393.222):
@@ -56,26 +56,21 @@ Select the executable and let it decide what to download on its own:
 
 Run the downloaded executable to install Visual Studio, using whatever additional config settings work best for you:
 
-![](img/vs2015-install-part1-2016-10.png)
-
-![](img/vs2015-install-part2-2016-10.png)
-
-![](img/vs2015-install-part3b-2016-10.png)
-
-![](img/vs2015-install-part4b-2016-10.png)
+![](img/vs2017-install-detail-panel.png)
 
 1. Add `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin` to your `PATH`, based on where you installed VS 2015.
-2. Define sysenv variable `INCLUDE` with the value `C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt`
-3. Define sysenv variable `LIB` with the value `C:\Program Files (x86)\Windows Kits\10\Lib\10.0.10240.0\um\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.10240.0\ucrt\x64`
+2. Execute PowerShell from an elevated prompt
+    [Environment]::SetEnvironmentVariable("INCLUDE", "C:\Program Files (x86)\Windows Kits\10\Include\10.0.15063.0\ucrt", "Machine")
+    [Environment]::SetEnvironmentVariable("LIB", "C:\Program Files (x86)\Windows Kits\10\Include\10.0.15063.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.15063.0\ucrt", "Machine")
 
 > Reference Note: We couldn't run any Theano python files until we added the last two env variables above. We would get a `c:\program files (x86)\microsoft visual studio 14.0\vc\include\crtdefs.h(10): fatal error C1083: Cannot open include file: 'corecrt.h': No such file or directory` error at compile time and missing `kernel32.lib uuid.lib ucrt.lib` errors at link time. True, you could probably run `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat` (with proper params) every single time you open a MINGW cmd prompt, but, obviously, none of the sysenv vars would stick from one session to the next.
 
 ## Anaconda (64-bit)
 
-This tutorial was initially created with Python 2.7, but Python 3.5 works too. The newest Anaconda version uses Python 3.6, but that version is still [poorly supported](https://github.com/tensorflow/tensorflow/issues/6999), so we stick to an older version that is known to work well. 
+This tutorial was initially created with Python 2.7, but Python 3.5 works too. The newest Anaconda version uses Python 3.6, but that version is still [poorly supported](https://github.com/tensorflow/tensorflow/issues/6999), so we stick to an older version that is known to work well.
 > Depending on your installation use `c:\toolkits\anaconda3-4.2.0` instead of `c:\toolkits\anaconda2-4.2.0`.
 
-Download the appropriate Anaconda version from [here](https://www.continuum.io/downloads), 
+Download the appropriate Anaconda version from [here](https://www.continuum.io/downloads),
 note that you have to browse the Anaconda installer archive for [Anaconda3-4.2.0](https://repo.continuum.io/archive/Anaconda3-4.2.0-Windows-x86_64.exe):
 
 ![](img/anaconda-4.2.0-download-2016-10.png)
@@ -129,8 +124,12 @@ Run the downloaded installer. Install the files in `c:\toolkits\cuda-8.0.61`:
 
 After completion, the installer should have created a system environment (sysenv) variable named `CUDA_PATH` and added `%CUDA_PATH%\bin` as well as`%CUDA_PATH%\libnvvp` to `PATH`. Check that it is indeed the case. If, for some reason, the CUDA env vars are missing, then:
 
-1. Define a system environment (sysenv) variable named `CUDA_PATH` with the value `c:\toolkits\cuda-8.0.61`
-2. Add`%CUDA_PATH%\libnvvp` and `%CUDA_PATH%\bin` to `PATH`
+```
+  #Powershell (Only if CUDA paths are missing, run in elevated prompt)
+  $cudaPath = [Environment]::GetEnvironmentVariable("CUDA_PATH")
+  Write-Host "Appending CUDA_PATH '$cudaPath' to PATH"
+  [Environment]::SetEnvironmentVariable( "Path", $env:Path + ";$cudaPath\libnvvp", "Machine")
+```
 
 ## MinGW-w64 (5.4.0)
 
@@ -145,9 +144,14 @@ Install it to `c:\toolkits\mingw-w64-5.4.0` with the following settings (second 
 
 ![](img/mingw-install-5.4.0-part2-2016-10.png)
 
-
-1. Define the sysenv variable `MINGW_HOME` with the value `c:\toolkits\mingw-w64-5.4.0`
-2. Add `%MINGW_HOME%\mingw64\bin` to `PATH`
+```
+# Powershell - run elevated
+Write-Host "Define the sysenv variable MINGW_HOME"
+$mingwHome = "c:\toolkits\mingw-w64-5.4.0"
+[Environment]::SetEnvironmentVariable( "MINGW_HOME", $mingwHome, "Machine")
+Write-Host "Appending mingw bin's to PATH"
+[Environment]::SetEnvironmentVariable( "Path", $env:Path + ";$mingwHome\mingw64\bin", "Machine")
+```
 
 Run the following to make sure all necessary build tools can be found:
 
@@ -164,17 +168,17 @@ You should get results similar to:
 
 ## Keras 2.0.4 and Theano 0.9
 
-Why those specific versions? Why not just install the latest bleeding-edge version of 
-Keras and Theano since they obviously must work better, right? Simply put, because it 
-makes [reproducible research](https://www.coursera.org/learn/reproducible-research) harder. 
-If your work colleagues or Kaggle teammates install the latest code from the dev branch at a 
-different time than you did, you will most likely be running different code bases on your machines, 
-increasing the odds that even though you're using the same input data (the same random seeds, etc.), 
-you still end up with different results when you shouldn't. 
-For this reason alone, we highly recommend only using point releases, the same one across machines, 
+Why those specific versions? Why not just install the latest bleeding-edge version of
+Keras and Theano since they obviously must work better, right? Simply put, because it
+makes [reproducible research](https://www.coursera.org/learn/reproducible-research) harder.
+If your work colleagues or Kaggle teammates install the latest code from the dev branch at a
+different time than you did, you will most likely be running different code bases on your machines,
+increasing the odds that even though you're using the same input data (the same random seeds, etc.),
+you still end up with different results when you shouldn't.
+For this reason alone, we highly recommend only using point releases, the same one across machines,
 and always documenting which one you use if you can't just use a setup script.
 
-The following command will install Keras and Theano inside of your Python distribution 
+The following command will install Keras and Theano inside of your Python distribution
 
 ```
 $ pip install keras==2.0.4
@@ -410,7 +414,7 @@ Now, each epoch takes about 3s, instead of 20s, **a large improvement in speed**
 
 ![](img/mnist_cnn_gpu_cudnn_usage-2016-10.png)
 
-The `Your cuDNN version is more recent than the one Theano officially supports` message certainly sounds ominous but a test accuracy of 0.9899 would suggest that it can be safely ignored. 
+The `Your cuDNN version is more recent than the one Theano officially supports` message certainly sounds ominous but a test accuracy of 0.9899 would suggest that it can be safely ignored.
 
 ## Installing Tensorflow and switching backend
 
@@ -432,7 +436,7 @@ The warnings at the beginning are annoying, but so far there is [no supported wa
 
 So...
 
-... that's it. Enjoy your super-fast installation. 
+... that's it. Enjoy your super-fast installation.
 
 # References
 
@@ -467,5 +471,3 @@ Intro to Deep Learning with Python, by Alec Radford
 For information about the author, please visit:
 
 [![https://www.linkedin.com/in/philferriere](img/LinkedInDev.png)](https://www.linkedin.com/in/philferriere)
-
-
